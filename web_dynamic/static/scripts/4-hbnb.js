@@ -2,7 +2,7 @@ $(() => {
   const amenityDict = {};
 
   // Function to create an article tag representing a Place
-  function createArticle (place) {
+  function createPlaceElement (place) {
     return `
             <article>
                 <div class="title_box">
@@ -23,7 +23,7 @@ $(() => {
   }
 
   // Checkbox click event handling for amenities
-  $('input[type=checkbox]').click(() => {
+  $('input[type=checkbox]').click(function () { // Change to regular function
     if ($(this).is(':checked')) {
       amenityDict[$(this).data('id')] = $(this).data('name');
     } else {
@@ -35,13 +35,41 @@ $(() => {
   // Check API status and update DIV#api_status class
   $.get('http://0.0.0.0:5001/api/v1/status/', function (data, textStatus) {
     if (textStatus === 'success') {
-      $('div#api_status').addClass('available');
+      $('DIV#api_status').addClass('available');
     } else {
-      $('div#api_status').removeClass('available');
+      $('DIV#api_status').removeClass('available');
     }
   });
 
-  // Send a POST request to get places data
+  // Button click event handling for sending a new POST request with checked amenities
+  $('button').click(function () { // Add this click handler
+    // Send a new POST request with the list of checked amenities
+    $.ajax({
+      url: 'http://0.0.0.0:5001/api/v1/places_search/',
+      type: 'POST',
+      data: JSON.stringify({ amenities: Object.keys(amenityDict) }),
+      dataType: 'json',
+      contentType: 'application/json; charset=utf-8',
+      success: function (data) {
+        // Clear existing places
+        $('section.places').empty();
+
+        // Loop through the result and create article tags for each place
+        data.forEach((place) => {
+          // Remove the Owner tag from the place description
+          delete place.owner_id;
+
+          // Create and append the place element to the section.places
+          const placeElement = createPlaceElement(place);
+          $('section.places').append(placeElement);
+        });
+      },
+      error: function (error) {
+        console.error('Error:', error);
+      }
+    });
+  });
+
   $.ajax({
     url: 'http://0.0.0.0:5001/api/v1/places_search/',
     type: 'POST',
@@ -55,7 +83,7 @@ $(() => {
         delete place.owner_id;
 
         // Create and append the place element to the section.places
-        const placeElement = createArticle(place);
+        const placeElement = createPlaceElement(place);
         $('section.places').append(placeElement);
       });
     },
